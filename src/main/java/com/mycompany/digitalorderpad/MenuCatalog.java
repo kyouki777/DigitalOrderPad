@@ -11,8 +11,9 @@ package com.mycompany.digitalorderpad;
 
 
 import java.util.ArrayList;
+import java.io.Serializable;
 
-public class MenuCatalog {
+public class MenuCatalog implements Serializable{
     private ArrayList<Menu> availableItems = new ArrayList<>();
     
     public MenuCatalog(){
@@ -30,5 +31,14 @@ public class MenuCatalog {
             return availableItems.get(index);
         }
         return null;
+    }
+    public void addItem(Menu newItem){ //newItem catches the 3 info needed bcs Menu is already called here
+        availableItems.add(newItem); //add too existing arraylist
+    }
+    
+    public void removeItem(int index){
+        if (index >= 0 && index < availableItems.size()){
+            availableItems.remove(index);
+        }
     }
 }

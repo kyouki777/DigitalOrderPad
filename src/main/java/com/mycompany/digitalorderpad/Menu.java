@@ -8,7 +8,8 @@ package com.mycompany.digitalorderpad;
  *
  * @author Emily
  */
-public class Menu {
+import java.io.Serializable;
+public class Menu implements Serializable{
     private String menuName;
     private int price;
     private int quantity;

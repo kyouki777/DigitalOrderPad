@@ -9,8 +9,17 @@ package com.mycompany.digitalorderpad;
  * @author Emily
  */
 import javax.swing.JOptionPane;
-import java.util.Scanner;
 import java.util.ArrayList;
+
+import javax.swing.JScrollPane; //for the show history scroll bar
+import javax.swing.JTextArea;
+import java.awt.Dimension;
+
+import java.io.FileInputStream; //for saving data when the program stops
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.IOException;
 
 public class DigitalOrderPad {
     
@@ -29,20 +38,10 @@ public class DigitalOrderPad {
 //        System.out.println("Total" + order1.calculateTotal());
 //        System.out.println("Subtotal " + item1.getSubTotal());
 //        System.out.println("Subtotal " + item2.getSubTotal());
-//        System.out.println(order1.getReceiptDetails());
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("DIGITAL ORDER PAD SYSTEM LAUNCH");
-        System.out.println("Launch application interface? (Y/N");
-        String launchChoice = scanner.nextLine().trim();
-        if (!launchChoice.equalsIgnoreCase("Y")){
-            System.out.println("System startup cancelled by operator.");
-            scanner.close();
-        }
-        System.out.println("Launching GUI Interface...");
+//        System.out.println(order1.getReceiptDetails()); 
         
-        
-        OrderHistory history = new OrderHistory();
-        
+ 
+        loadData();
         boolean running = true;
         
         while (running){
@@ -71,6 +70,7 @@ public class DigitalOrderPad {
                 case JOptionPane.CLOSED_OPTION:
                     running = false;
                     JOptionPane.showMessageDialog(null, "Thank you for using Digital Order Pad!");
+                    saveData();
                     break;
             }
         }
@@ -118,7 +118,7 @@ public class DigitalOrderPad {
                 sb.append("Current Total: Rp ").append(currentReceipt.calculateTotal()).append("\n");
             }
             
-            String[] options = {"Add item", "Check out", "Remove item", "Back to Main Menu"};
+            String[] options = {"Add item", "Check out", "Remove last item", "Back to Main Menu"};
             
             int choice = JOptionPane.showOptionDialog(
                     null, 
@@ -148,8 +148,9 @@ public class DigitalOrderPad {
                 if (selected != null){
                     String quantityInput = JOptionPane.showInputDialog(null, "Enter quantity for " + selected.getMenuName() + ":");
                 if (quantityInput != null && !quantityInput.trim().isEmpty()){
-                    int quantity = Integer.parseInt(quantityInput.trim());
+                    
                     try{
+                        int quantity = Integer.parseInt(quantityInput.trim()); //converts string input into int
                         if (quantity > 0){
                             currentReceipt.addItem(new Menu(selected.getMenuName(), selected.getPrice(), quantity));
                             JOptionPane.showMessageDialog(null, "Added " + quantity + "x " + selected.getMenuName() + " to order!");
@@ -167,7 +168,11 @@ public class DigitalOrderPad {
                     //check out button
                     if (currentReceipt.getItems().isEmpty()){
                         JOptionPane.showMessageDialog(null, "Cart is empty!");
+                        
+                    } else{
+                        JOptionPane.showMessageDialog(null, currentReceipt.getReceiptDetails());
                         history.addReceipt(currentReceipt);
+                        saveData();
                         ordering = false;
                     }
                     break;
@@ -183,7 +188,7 @@ public class DigitalOrderPad {
                     break;
                 case 3:
                     //back to main menu button
-                    break;
+                    return;
             
             }
         }
@@ -191,11 +196,132 @@ public class DigitalOrderPad {
     
     public static void editMenu(){
         //add menu n remove menu
-        
+        boolean editing = true;
+        while (editing){
+            ArrayList<Menu> available = catalog.getAvailableItems();
+            
+            if (available.isEmpty()){
+                JOptionPane.showMessageDialog(null, "The canteen catalog is empty.");
+                return;
+            }
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append("~~~ CANTEEN MENU ~~~\n");
+            for (int i = 0; i < available.size(); i++){
+                Menu item = available.get(i);
+                sb.append(i + 1).append(". ").append(item.getMenuName())
+                        .append(" - Rp ").append(item.getPrice()).append("\n");
+            }
+            
+            
+            String[] options = {"Add Menu", "Remove Menu", "Back to Main Menu"};
+            
+            int choice = JOptionPane.showOptionDialog(
+                    null, 
+                    sb.toString(), 
+                    "Choose item", 
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0]);
+            
+            switch (choice){
+                case 0:
+                    //add menu
+                    String addMenuName = JOptionPane.showInputDialog(null, "Enter menu name: ");
+                    if (addMenuName == null || addMenuName.trim().isEmpty()){return;}
+                    
+                    String addMenuPrice = JOptionPane.showInputDialog(null, "Enter menu price: ");
+                    if (addMenuName == null || addMenuName.trim().isEmpty()){return;}
+                    
+                    try{
+                        int price = Integer.parseInt(addMenuPrice.trim());//change string input into integer
+                        if (price>0){
+                            catalog.addItem(new Menu(addMenuName.trim(), price,0));
+                            saveData();
+                            JOptionPane.showMessageDialog(null,addMenuName + " Rp " + addMenuPrice + " added to catalog!");
+                        }else{
+                            JOptionPane.showMessageDialog(null, "Price must be greater than 0.");
+                        }
+
+                    }catch (NumberFormatException e){
+                                JOptionPane.showMessageDialog(null, "Invalid price. Please enter numbers only");
+                                }
+                    break;
+                    
+                case 1:
+                    //remove menu
+                    ArrayList<Menu> availableItems = catalog.getAvailableItems();
+                    
+                    if (availableItems.isEmpty()){
+                        JOptionPane.showMessageDialog(null, "Catalog is already empty!");
+                        break;
+                        
+                    }
+                    Menu[] itemArray = available.toArray(new Menu[0]);
+                    Menu selected = (Menu) JOptionPane.showInputDialog(
+                        null,
+                            "Select a menu to remove.",
+                            "Remove menu",
+                            JOptionPane.WARNING_MESSAGE,
+                            null,
+                            itemArray,
+                            itemArray[0]);
+                            
+                    if (selected != null){
+                        int indexToRemove = availableItems.indexOf(selected); //get the index of the selected menu
+                        String removedName = selected.getMenuName(); //get menu name for the show message dialog
+                        
+                        catalog.removeItem(indexToRemove);
+                        saveData();
+                        JOptionPane.showMessageDialog(null, removedName + " has been removed from catalog!");
+                    }
+                    break;
+                case 2:
+                    //back to main menu
+                    return;
+                    
+            }
+        }
     }
     
     public static void transactionHistory(){
+        String summary = history.getHistorySummary();
         
+        if (summary == null || summary.trim().isEmpty()){
+            JOptionPane.showMessageDialog(null, "No completed transactions recorded yet.");
+            return;
+        }
+        
+        JTextArea textArea = new JTextArea(summary);
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(380, 300));
+        
+        JOptionPane.showMessageDialog(null, scrollPane, "Transaction History", JOptionPane.PLAIN_MESSAGE);
+
+        }
+    
+    public static void saveData(){
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("canteen_data.dat"))){
+            out.writeObject(catalog);
+            out.writeObject(history);
+        } catch (IOException e){
+            JOptionPane.showMessageDialog(null, "Failed to save data: " + e.getMessage());
+        }
+    }
+    
+    public static void loadData(){
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("canteen_data.dat"))){
+            catalog = (MenuCatalog) in.readObject();
+            history = (OrderHistory) in.readObject();
+        } catch (Exception e){
+            // File doesn't exist yet on first run. keep default catalog & empty history
+        }
     }
     
 }

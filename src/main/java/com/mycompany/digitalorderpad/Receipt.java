@@ -8,9 +8,10 @@ package com.mycompany.digitalorderpad;
  *
  * @author Emily
  */
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Receipt {
+public class Receipt implements Serializable{
     private static int idCounter = 1;
     
     private int id;
@@ -58,13 +59,9 @@ public class Receipt {
         return sb.toString();
     }
     
-    public int calculateFinalTotal(){
-        int total = calculateTotal();
-        if (total >= 100000){
-            return total * 90 / 100;
+    public int calculateFinalTotal() {
+        return calculateTotal() - getDiscountAmount();
         }
-        return total;
-    }
     
     public int getDiscountAmount(){
         int total = calculateTotal();

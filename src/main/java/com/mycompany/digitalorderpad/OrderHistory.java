@@ -9,7 +9,8 @@ package com.mycompany.digitalorderpad;
  * @author Emily
  */
 import java.util.ArrayList;
-public class OrderHistory {
+import java.io.Serializable;
+public class OrderHistory implements Serializable{
     
     private ArrayList <Receipt> orderHistory = new ArrayList<>();
     
@@ -18,13 +19,19 @@ public class OrderHistory {
     }
     
     public String getHistorySummary(){
-        String summary = "=== ALL COMPLETED ORDERS ===\n\n";
+        
+        if (orderHistory.isEmpty()){
+            return "";}
+            
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("=== ALL COMPLETED ORDERS ===\n\n");
         
         for (Receipt r : orderHistory){ //gets all the receipts in orderHistory through loop
-            summary += r.getReceiptDetails(); //passes the details to summary and the method returns all the strings
+            sb.append(r.getReceiptDetails()).append("\n\n");
         }
         
-        return summary;
+        return sb.toString();
     }
    
 }
